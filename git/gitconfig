@@ -1,0 +1,13 @@
+[push]
+	autoSetupRemote = true
+[init]
+	defaultBranch = main
+[credential "https://github.com"]
+	helper =
+	helper = !gh auth git-credential
+[credential "https://gist.github.com"]
+	helper =
+	helper = !gh auth git-credential
+# Name and email live in ~/.gitconfig.local (set by install.sh, not in the repo)
+[include]
+	path = ~/.gitconfig.local
