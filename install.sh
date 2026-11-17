@@ -4,6 +4,10 @@
 # Safe to run again: it updates the repo and re-applies everything.
 set -euo pipefail
 
+# Everything runs inside main(), called on the last line, so bash reads the
+# whole script before running it (needed for "wget ... | bash"). Commands that
+# could read stdin get </dev/null so they never eat the script text.
+main() {
 REPO="https://github.com/dminhvu/dotfiles.git"
 DIR="$HOME/.dotfiles"
 STAMP="$(date +%Y%m%d-%H%M%S)"
@@ -22,8 +26,8 @@ put() {
 }
 
 say "Installing packages (asks for your sudo password once)"
-sudo apt-get update -y
-sudo apt-get install -y git curl wget unzip fontconfig fish bat gh fonts-jetbrains-mono
+sudo apt-get update -y </dev/null
+sudo apt-get install -y git curl wget unzip fontconfig fish bat gh fonts-jetbrains-mono </dev/null
 
 say "Getting the dotfiles repo into $DIR"
 if [ -d "$DIR/.git" ]; then
@@ -68,8 +72,8 @@ fi
 say "fish: config, plugins (fisher) and the Tide prompt"
 put "$DIR/fish/config.fish"  "$HOME/.config/fish/config.fish"
 put "$DIR/fish/fish_plugins" "$HOME/.config/fish/fish_plugins"
-fish -c 'curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source; and fisher update'
-fish "$DIR/fish/tide.fish"
+fish -c 'curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source; and fisher update' </dev/null
+fish "$DIR/fish/tide.fish" </dev/null
 
 FISH_BIN="$(command -v fish)"
 if [ "$(getent passwd "$USER" | cut -d: -f7)" != "$FISH_BIN" ]; then
@@ -79,14 +83,19 @@ fi
 
 say "VS Code: settings, keybindings, extensions"
 if ! command -v code >/dev/null 2>&1; then
-  sudo snap install code --classic
+  sudo snap install code --classic </dev/null
 fi
 put "$DIR/vscode/settings.json"    "$HOME/.config/Code/User/settings.json"
 put "$DIR/vscode/keybindings.json" "$HOME/.config/Code/User/keybindings.json"
 while read -r ext; do
   [ -z "$ext" ] && continue
-  code --install-extension "$ext" --force >/dev/null 2>&1 || warn "could not install $ext"
+  code --install-extension "$ext" --force </dev/null >/dev/null 2>&1 || warn "could not install $ext"
 done < "$DIR/vscode/extensions.txt"
 
-say "Done. Log out and back in once so fish becomes your login shell."
-echo "GitHub login for git push: gh auth login"
+say "Done."
+echo "1. Close ALL terminal windows and open a new one (it loads the new font)."
+echo "2. Log out and back in once so fish becomes your login shell."
+echo "3. GitHub login for git push: gh auth login"
+}
+
+main "$@"
